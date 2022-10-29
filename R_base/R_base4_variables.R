@@ -1,3 +1,4 @@
+rm(list = ls()) 
 a = c(1,2,3) # create
 class(a)
 
@@ -52,3 +53,10 @@ dim(a) = c(2,5)
 a[,1]
 a[,c(T,F)]
 a[,c(F,F,F,F,T)]
+
+
+rivers
+head(rivers) # 全部6个观测值
+tail(rivers) # 后6个观测值
+names(rivers) # 显示变量名
+rivers    #北美141条河流长度
