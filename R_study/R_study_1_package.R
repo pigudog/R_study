@@ -1,0 +1,50 @@
+rm(list = ls()) 
+options()$repos 
+options()$BioC_mirror
+#options(BioC_mirror="https://mirrors.ustc.edu.cn/bioc/")
+options(BioC_mirror="http://mirrors.tuna.tsinghua.edu.cn/bioconductor/")
+options("repos" = c(CRAN="https://mirrors.tuna.tsinghua.edu.cn/CRAN/"))
+options()$repos 
+options()$BioC_mirror
+
+
+
+# https://bioconductor.org/packages/release/bioc/html/GEOquery.html
+if (!requireNamespace("BiocManager", quietly = TRUE))
+  install.packages("BiocManager") 
+BiocManager::install(c("GSEABase","GSVA","clusterProfiler" ),ask = F,update = F)
+BiocManager::install(c("GEOquery","limma","impute" ),ask = F,update = F)
+BiocManager::install(c("org.Hs.eg.db","hgu133plus2.db" ),ask = F,update = F)
+
+# 下面代码被我注释了，意思是这些代码不需要运行，因为它过时了，很多旧教程就忽略
+# 在代码前面加上 # 这个符号，代码代码被注释，意思是不会被运行
+# source("https://bioconductor.org/biocLite.R") 
+# library('BiocInstaller') 
+# options(BioC_mirror="https://mirrors.ustc.edu.cn/bioc/") 
+# BiocInstaller::biocLite("GEOquery")
+# BiocInstaller::biocLite(c("limma"))
+# BiocInstaller::biocLite(c("impute"))
+
+# 发现即使安装了包也找不到包？
+install.packages('curl')
+
+# 但是接下来的代码又需要运行啦
+options()$repos
+install.packages('WGCNA')
+install.packages(c("FactoMineR", "factoextra"))
+install.packages(c("ggplot2", "pheatmap"))
+install.packages("ggpubr")
+library("FactoMineR")
+library("factoextra")
+
+library(GSEABase)
+library(GSVA)
+library(clusterProfiler)
+library(ggplot2)
+library(ggpubr)
+library(hgu133plus2.db)
+library(limma)
+library(org.Hs.eg.db)
+library("pheatmap")
+
+# Installing R Packages  : 'factoextra', 'FactoMineR', 'ggpubr'
