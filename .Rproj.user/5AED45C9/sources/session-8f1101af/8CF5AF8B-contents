@@ -1,0 +1,94 @@
+rm(list = ls())
+options(stringsAsFactors = F)
+a= read.table('~/project/airway/test/all.id.txt',header = T)  #header
+meta=a[,1:6]
+exprSet=a[,7:ncol(a)]
+a2=exprSet[,'SRR1039508.hisat.bam']  ##
+library(pheatmap)
+library(corrplot)
+png('heatmap.png')
+corrplot(cor(exprSet))
+pheatmap(scale(cor(log2(exprSet+1))))
+dev.off()
+## 
+library(airway)
+data("airway")
+exprSet=assay(airway)
+a1=exprSet[,'SRR1039508']  ##
+group_list=colData(airway)[,3]
+##hclust, 层次聚类包
+colnames(exprSet)=paste(group_list,1:ncol(exprSet),sep = '_')
+##difine nodePar
+nodePar=list(lab.cex=0.6, pch=c(NA, 19),cex=0.7,col='blue')
+hc=hclust(dist(t(log2(exprSet+1))))
+par(mar=c(5,5,5,10))  #par函数设置图形边距，mar参数设置边距
+png('hclust.png',res = 120)
+plot(as.dendrogram(hc),nodePar=nodePar,horiz=TRUE)
+dev.off()
+
+a2=data.frame(id=meta[,1],a2=a2)
+a1=data.frame(id=names(a1),a1)
+library(stringr)  #stringr包处理字符串
+a2$id=str_split(a2$id,'\\.',simplify = T)[,1]
+tmp=merge(a1,a2,by='id')
+png('tmp.png')
+plot(tmp[,c(2,4)])  #从图上看更直观
+dev.off()
+
+
+library(DESeq2)
+library(edgeR)
+library(limma)
+library(airway)
+data("airway")
+exprSet=assay(airway)  #定量后的信息
+group_list=colData(airway)[,3]  #提取出来了分组信息，也可以手动写成c()
+colData=data.frame(row.names = colnames(exprSet),
+                   group=group_list)
+dds=DESeqDataSetFromMatrix(countData = exprSet,
+                           colData = colData,
+                           design = ~group)  #获取矩阵信息
+dds=DESeq(dds)
+res=results(dds,contrast = c('group','trt','untrt'))
+summary(res)  #利用summary命令统计显示一共多少个genes上调和下调
+resOrdered=res[order(res$padj),]  #根据padj（p值经过多重校验校正后的值）排序
+DEG=as.data.frame(resOrdered)
+DEG=na.omit(DEG)
+library(pheatmap)
+choose_gene=head(rownames(DEG),100)  
+choose_matrix=exprSet[choose_gene,]  #抽取差异表达显著的前100个基因
+choose_matrix=t(scale(t(choose_matrix)))  #用t函数转置，scale函数标准化
+pheatmap(choose_matrix,filename='DEG_top100.png')
+
+logFC_cutoff=with(DEG,mean(abs(log2FoldChange))+2*sd(abs(log2FoldChange)))  #算log2FoldChange的阈值，with 提取数据框中的某些参数做运算，abs求绝对值，sd求标准差
+DEG$change=as.factor(ifelse(DEG$pvalue<0.05 & abs(DEG$log2FoldChange)>logFC_cutoff,ifelse(DEG$log2FoldChange>logFC_cutoff,'UP','DOWN'),'NOT'))
+#ifelse函数，大于logFC_cutoff的设为up，小于为down
+this_title=paste0('Cutoff for logFC is ',round(logFC_cutoff,3), '\nThe number of up gene is ',nrow(DEG[DEG$change=='UP',]), '\nThe number of down gene is ',nrow(DEG[DEG$change=='DOWN',]))  #paste0函数，默认是sep=""
+library(ggplot2)                     
+g=ggplot(data = DEG,
+         aes(x=log2FoldChange,y=-log10(pvalue),
+             color=change))+
+  geom_point(alpha=0.4,size=1.75)+
+  theme_set(theme_set(theme_bw(base_size = 20)))+
+  xlab('log2 fold change')+ylab('-log10 p-value')+
+  ggtitle(this_title)+theme(plot.title = element_text(size = 15,hjust = 0.5))+
+  scale_color_manual(values = c('blue','black','red'))  #corresponding to the levels(res$change)
+ggsave(g,filename = 'volcano.png') 
+
+png('dispersions.png',1000,1000,pointsize = 20)
+plotDispEsts(dds,main='dispersion plot')
+dev.off()
+
+rld=rlogTransformation(dds)  #DEseq2自带的rlog算法对数据进行count矩阵转换
+exprMatrix_rlog=assay(rld)
+png('DEseq_RAWvsNORM.png',height = 800,width = 800)
+par(cex=0.7)  #par函数设定全局绘图参数，cex放大多少倍
+n.sample=ncol(exprSet)
+if(n.sample>40) par(cex=0.5)  #
+cols=rainbow(n.sample*1.2)  #rainbow 渐变的彩虹色
+par(mfrow=c(2,2))  #4个图按行排序
+boxplot(exprSet, col=cols,main='expression value',las=2)  #las为2，标签垂直坐标轴
+boxplot(exprMatrix_rlog, col=cols, main='expression value',las=2)
+hist(as.matrix(exprSet))
+hist(exprMatrix_rlog)
+dev.off()

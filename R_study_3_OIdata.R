@@ -1,0 +1,91 @@
+a=read.table("SraRunTable.txt",sep="\t",comment.char = "!",header = T)
+b=read.table("GSE111229_Mammary_Tumor_fibroblasts_768samples_rawCounts.txt",sep="\t")
+# comment.char可以用于跳过以什么为开头的前几行
+c=read.table("sample.csv",sep=",",header = T)
+write.csv(b,"GSE111229_Mammary_Tumor_fibroblasts_768samples_rawCounts.csv")
+
+
+
+
+# 给列名
+rownames(a) = a[,1]
+a = a[,-1] # 负号代表去掉
+# 把列名去掉
+write.csv(a,"SraRunTable.csv")
+d = read.csv("SraRunTable.csv")
+# # 去掉行名
+# write.csv("xxx",row.names=F)
+
+pheatmap::pheatmap(b[1:5,1:10])
+save(b,file="GSE111229_Mammary_Tumor_fibroblasts_768samples_rawCounts.Rdata")
+load("GSE111229_Mammary_Tumor_fibroblasts_768samples_rawCounts.Rdata")
+
+# homework
+## sarruntable
+sarruntable = d
+str(sarruntable)
+dim(sarruntable)
+colnames(sarruntable)
+## 查看每一列的属性
+for (i in colnames(sarruntable))
+  print(paste(i,class(sarruntable[,i])))
+
+## sample
+sam = c
+colnames(sam)
+
+## merge
+m <- merge(sarruntable, sam, by.x = 'Sample_Name',by.y = 'Accession')
+colnames(m) # 合并的表格用的是samplename，就是前一个
+
+
+## boxplot
+boxplot(sarruntable$MBases) ###箱线图
+
+fivenum(sarruntable$MBases) ### 五分位
+
+hist(sarruntable$MBases) ### 频数图
+
+density.default(sarruntable$MBases) ### 密度图
+
+summary(sarruntable$MBases)
+
+
+# answer
+rm(list = ls())
+options(stringsAsFactors = F)
+# 或者下载：http://www.bio-info-trainee.com/tmp/5years/SraRunTable.txt
+a=read.table('SraRunTable.txt',sep = '\t',header = T)
+# 或者下载：http://www.bio-info-trainee.com/tmp/5years/sample.csv 
+b=read.csv('sample.csv')
+colnames(a)
+colnames(b)
+d=merge(a,b,by.x = 'Sample_Name',by.y = 'Accession')
+e=d[,c("MBases","Title")]
+save(e,file = 'input.Rdata')
+
+rm(list = ls())
+options(stringsAsFactors = F)
+load(file = 'input.Rdata')
+
+e[,2]
+plate=unlist(lapply(e[,2],function(x){
+  # x=e[1,2]
+  x
+  strsplit(x,'_')[[1]][3]
+  
+}))
+table(plate)
+boxplot(e[,1]~plate)
+t.test(e[,1]~plate)
+e$plate=plate
+library(ggplot2)
+colnames(e)
+ggplot(e,aes(x=plate,y=MBases))+geom_boxplot()
+
+library(ggpubr)
+p <- ggboxplot(e, x = "plate", y = "MBases",
+               color = "plate", palette = "jco",
+               add = "jitter")
+# Add p-value
+p + stat_compare_means(method = 't.test')
